@@ -1,14 +1,14 @@
 "use client";
 
 import { GlobalContext } from "@/context";
-import { adminNavOptions, navOptions, styles } from "@/utils";
-import { Fragment, useContext, useState } from "react";
-import CommonModal from "../CommonModel";
+import { adminNavOptions, navOptions } from "@/utils";
+import { Fragment, useContext, useEffect } from "react";
+import CommonModal from "@/components/CommonModel";
+import Cookies from "js-cookie";
+import { usePathname, useRouter } from "next/navigation";
+import CartModal from "@/components/CartModel";
 
-const isAdminView = false;
-
-
-function NavItems({ isModelView = false }) {
+function NavItems({ isModelView = false, isAdminView, router }) {
   return (
     <div
       className={`item-center justify-between w-full md:flex md:w-auto ${
@@ -16,12 +16,17 @@ function NavItems({ isModelView = false }) {
       }`}
       nav-items
     >
-      <ul className={`flex flex-col p-4 md:p-0 mt-4 font-medium  rounded-lg md:flex-row md:space-x-8 md:mt-0 md:border-0 bg-white ${isModelView ? "border-none" : "border border-grey-100"}`}>
+      <ul
+        className={`flex flex-col p-4 md:p-0 mt-4 font-medium  rounded-lg md:flex-row md:space-x-8 md:mt-0 md:border-0 bg-white ${
+          isModelView ? "border-none" : "border border-grey-100"
+        }`}
+      >
         {isAdminView
           ? adminNavOptions.map((item) => (
               <li
                 className="cursor-pointer block py-2 pl-3 pr-4 text-grey-900 rounded md:p-0"
                 key={item.id}
+                onClick={() => router.path(item.path)}
               >
                 {item.label}
               </li>
@@ -40,13 +45,46 @@ function NavItems({ isModelView = false }) {
 }
 export default function Navbar() {
   const { ShowNavModal, setShowNavModal } = useContext(GlobalContext);
-  const{user, isAuthUser}=useContext(GlobalContext)
+  const {
+    user,
+    isAuthUser,
+    setIsAuthUser,
+    setUser,
+    currentUpdatedProduct,
+    setCurrentUpdatedProduct,
+    showCartModal,
+    setShowCartModal,
+  } = useContext(GlobalContext);
 
+  
+  const pathName = usePathname();
+  const router = useRouter();
+
+  console.log(currentUpdatedProduct, "navbar");
+  useEffect(() => {
+    if (
+      pathName !== "/admin-view/add-product" &&
+      currentUpdatedProduct !== null
+    )
+      setCurrentUpdatedProduct(null);
+  }, [pathName]);
+
+  function handleLogout() {
+    setIsAuthUser(false);
+    setUser(null);
+    Cookies.remove("token");
+    localStorage.clear();
+    router.push("/");
+  }
+  const isAdminView = pathName.includes("admin-view");
   return (
     <>
       <nav className="bg-white fixed w-full z-20 top-0 border-b border-grey-200 ">
         <div className=" max-w-screen-xl flex flex-wrap items-center justify-between mx-auto p-4">
-          <div className="flex items-center cursor-pointe">
+          <div
+            onClick={() => router.push("/")}
+            className="flex items-center cursor-pointer"
+          >
             <span className="slef-center text-2xl font-semibold whitespace-nowrap">
               Ecommercery
             </span>
@@ -58,6 +96,7 @@ export default function Navbar() {
                   className={
                     "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                   }
+                  onClick={()=>router.push('/account')}
                 >
                   Account
                 </button>
@@ -65,6 +104,7 @@ export default function Navbar() {
                   className={
                     "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                   }
+                  onClick={() => setShowCartModal(true)}
                 >
                   Cart
                 </button>
@@ -76,11 +116,13 @@ export default function Navbar() {
                   className={
                     "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                   }
+                  onClick={() => router.push("/")}
                 >
                   Client View
                 </button>
               ) : (
                 <button
+                  onClick={() => router.push("/admin-view")}
                   className={
                     "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                   }
@@ -91,6 +133,7 @@ export default function Navbar() {
             ) : null}
             {isAuthUser ? (
               <button
+                onClick={handleLogout}
                 className={
                   "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                 }
@@ -99,6 +142,7 @@ export default function Navbar() {
               </button>
             ) : (
               <button
+                onClick={() => router.push("/login")}
                 className={
                   "mt-1.5 inline-block bg-black px-5 py-3 text-xs font-medium upprcase tracking-wide text-white"
                 }
@@ -130,16 +174,23 @@ export default function Navbar() {
               </svg>
             </button>
           </div>
-          <NavItems />
+          <NavItems isAdminView={isAdminView} />
         </div>
       </nav>
 
       <CommonModal
         showModalTitle={false}
-        mainContent={<NavItems isModelView={true} />}
+        mainContent={
+          <NavItems
+            router={router}
+            isModalView={true}
+            isAdminView={isAdminView}
+          />
+        }
         show={ShowNavModal}
         setShow={setShowNavModal}
       />
+      {showCartModal && <CartModal />}
     </>
   );
 }

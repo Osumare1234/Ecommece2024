@@ -1,10 +1,15 @@
 "use client";
 import InputComponent from "@/components/FormElements/InputComponent";
 import SelectComponent from "@/components/FormElements/SelectComponent";
+import { GlobalContext } from "@/context";
 import { registerNewUser } from "@/services/register";
+import Notification from "@/components/Notification";
+import ComponentLevelLoader from "@/components/Loader/componentlevel";
 
 import { registrationFormControls } from "@/utils";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useContext, useState, useEffect } from "react";
+import { toast } from "react-toastify";
 
 const initialFormData = {
   name: "",
@@ -16,6 +21,9 @@ const initialFormData = {
 export default function Register() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [formData, setFormData] = useState(initialFormData);
+  const { pageLevelLoader, setPageLevelLoader, isAuthUser } =
+    useContext(GlobalContext);
+  const router = useRouter();
   console.log(formData);
 
   function isFormValid() {
@@ -32,10 +40,26 @@ export default function Register() {
   console.log(isFormValid());
 
   async function handleRegisterOnSubmit() {
+
+
     const data = await registerNewUser(formData);
+
+    if (data.success) {
+      toast.success(data.message, {
+        position: toast.POSITION.TOP_RIGHT,
+      });
+      setIsRegistered(true);
+      setPageLevelLoader(false);
+      setFormData(initialFormData);
+    } else 
 
     console.log(data);
   }
+
+  useEffect(() => {
+    if (isAuthUser) router.push("/");
+  }, [isAuthUser]);
+
 
   return (
     <div className="bg-white relative">
@@ -93,13 +117,22 @@ export default function Register() {
                   disabled={!isFormValid()}
                   onClick={handleRegisterOnSubmit}
                 >
-                  Register
+                  {pageLevelLoader ? (
+                    <ComponentLevelLoader
+                      text={"Registering"}
+                      color={"#ffffff"}
+                      loading={pageLevelLoader}
+                    />
+                  ) : (
+                    "Register"
+                  )}
                 </button>
               </div>
             )}
           </div>
         </div>
       </div>
+      <Notification />
     </div>
   );
 }
